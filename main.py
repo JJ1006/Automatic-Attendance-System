@@ -1,51 +1,60 @@
+# Import libraries.
 import cv2
 import numpy as np
 import face_recognition
 import os
 from datetime import datetime
 
-
+# Set a few important variables.
 attendence_toggle = 0
 path = 'Training_images'
 images = []
 classNames = []
 myList = os.listdir(path)
-print(myList)
+
+# To be implemented.
+def AddNewStudent():
+    return
+
+# To be implemented.
+def GenerateReportOnEnd():
+    return
+
+# Welcome and configuration.
+print("***Welcome to our IOT project - Automatic Attendance System.***")
+if(input("Do you want to add new students? [y/n]: ") == 'y'):
+    AddNewStudent()
+
+# Get the student images.
 for cl in myList:
     curImg = cv2.imread(f'{path}/{cl}')
     images.append(curImg)
     classNames.append(os.path.splitext(cl)[0])
-print(classNames)
 
-
+# Enroll faces.
 def findEncodings(images):
     encodeList = []
-
-
     for img in images:
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         encode = face_recognition.face_encodings(img)[0]
         encodeList.append(encode)
     return encodeList
 
-
+# Marking attendance in the csv database.
 def markAttendance(name):
     with open('Attendence.csv', 'r+') as f:
         myDataList = f.readlines()
-
-
-
         now = datetime.now()
         dtString = now.strftime('%H:%M:%S')
         f.writelines(f'\n{name},{dtString}')
 
 
-
 encodeListKnown = findEncodings(images)
 print('Encoding Complete')
-
+# Open the camera stream.
 cap = cv2.VideoCapture(0)
 
+# looped face recognition engine.
 while True:
     success, img = cap.read()
 
@@ -69,9 +78,10 @@ while True:
             cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0), 2)
             cv2.rectangle(img, (x1, y2 - 35), (x2, y2), (0, 255, 0), cv2.FILLED)
             cv2.putText(img, name, (x1 + 6, y2 - 6), cv2.FONT_HERSHEY_COMPLEX, 1, (255, 255, 255), 2)
-            if attendence_toggle == 0:
+            if attendence_toggle == 0:  # Every student should be marked only once per execution of this program.
                 markAttendance(name)
                 attendence_toggle = 1
 
-    cv2.imshow('Webcam', img)
+    cv2.imshow('Webcam', img)   # Keep showing the webcam feed.
     cv2.waitKey(1)
+    GenerateReportOnEnd()
