@@ -4,26 +4,44 @@ import numpy as np
 import face_recognition
 import os
 from datetime import datetime
+from datetime import date
 
 # Set a few important variables.
-attendence_toggle = 0
+TodayDate = date.today()
 path = 'Training_images'
 images = []
 classNames = []
 myList = os.listdir(path)
+PresentStudentsForNow = []
 
 # To be implemented.
 def AddNewStudent():
-    return
+    print("[!] Please ensure a clear picture of the face of a student. Press the SPACE key to capture the face.")
+    NewStudentName = input("[+] Enter the name of the student: ").replace(" ", "_")
+    cam = cv2.VideoCapture(0)
+    while True:
+        ret, frame = cam.read()
+        cv2.imshow("AddNewStudent", frame)
+        k = cv2.waitKey(1)
+        if k%256 == 32:
+            cv2.imwrite(f"{path}/{NewStudentName}.jpg", frame)
+            cv2.destroyAllWindows()
+            break
+    print(f"[+] Student {NewStudentName} is added!")
+    if(input("[?] Do you want to add a new student? [y/n]: ") == 'y'):
+        AddNewStudent()
 
 # To be implemented.
 def GenerateReportOnEnd():
-    return
+    print(f"[!] These student's attendance was recorded on {TodayDate}: ")
+    for i in range(len(PresentStudentsForNow)):
+        print(f'{i+1}) {PresentStudentsForNow[i]}')
 
 # Welcome and configuration.
-print("***Welcome to our IOT project - Automatic Attendance System.***")
-if(input("Do you want to add new students? [y/n]: ") == 'y'):
+print("*** Welcome to our IOT project - Automatic Attendance System. ***")
+if(input("[?] Do you want to add a new student? [y/n]: ") == 'y'):
     AddNewStudent()
+print("[!] Loading the attendance system...")
 
 # Get the student images.
 for cl in myList:
@@ -42,6 +60,7 @@ def findEncodings(images):
 
 # Marking attendance in the csv database.
 def markAttendance(name):
+    PresentStudentsForNow.append(name)
     with open('Attendence.csv', 'r+') as f:
         myDataList = f.readlines()
         now = datetime.now()
@@ -50,7 +69,9 @@ def markAttendance(name):
 
 
 encodeListKnown = findEncodings(images)
-print('Encoding Complete')
+
+print("[!] Starting the attendance system. Press the ESC key to exit.")
+
 # Open the camera stream.
 cap = cv2.VideoCapture(0)
 
@@ -78,10 +99,13 @@ while True:
             cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0), 2)
             cv2.rectangle(img, (x1, y2 - 35), (x2, y2), (0, 255, 0), cv2.FILLED)
             cv2.putText(img, name, (x1 + 6, y2 - 6), cv2.FONT_HERSHEY_COMPLEX, 1, (255, 255, 255), 2)
-            if attendence_toggle == 0:  # Every student should be marked only once per execution of this program.
+            if name not in PresentStudentsForNow:  # Every student should be marked only once per execution of this program.
                 markAttendance(name)
-                attendence_toggle = 1
 
-    cv2.imshow('Webcam', img)   # Keep showing the webcam feed.
-    cv2.waitKey(1)
-    GenerateReportOnEnd()
+    cv2.imshow('Attendance', img)   # Keep showing the webcam feed.
+    k = cv2.waitKey(1)
+    if k%256 == 27:
+        print("Escape hit, closing...")
+        break
+
+GenerateReportOnEnd()
